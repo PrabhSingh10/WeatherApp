@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -32,7 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var locationManager : LocationManager
     private lateinit var weatherRepository : Repository
     private lateinit var viewModel: WeatherViewModel
-    private val sdf = SimpleDateFormat("dd MM yyyy hh:mm a", Locale.ENGLISH)
+    private val sdf = SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.ENGLISH)
     private val sdf2 = SimpleDateFormat("hh:mm a", Locale.ENGLISH)
 
     private val locationPermission : ActivityResultLauncher<Array<String>> =
@@ -67,8 +68,13 @@ class MainActivity : AppCompatActivity() {
             bindingMain?.etCityName?.let {
                 if(it.text.toString().isNotEmpty()){
                     getWeatherResponseCity(it.text.toString())
+                    it.text.clear()
                 }
             }
+        }
+
+        bindingMain?.ivUpdate?.setOnClickListener {
+            getPermission()
         }
 
     }
@@ -81,8 +87,8 @@ class MainActivity : AppCompatActivity() {
             setMessage("Location permission is required")
             setPositiveButton("SETTINGS"){ dialogInterface, _ ->
                 dialogInterface.dismiss()
-                this@MainActivity.finish()
                 startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                getPermission()
             }
             setNegativeButton("CANCEL"){dialogInterface, _ ->
                 dialogInterface.dismiss()
@@ -101,7 +107,7 @@ class MainActivity : AppCompatActivity() {
 
         if(hasGps && checkLocationPermission()){
             locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 30000, 0F){}
+                LocationManager.GPS_PROVIDER, 5000, 0F){}
             val gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             if(gpsLocation != null){
                 getWeatherResponse(gpsLocation.latitude, gpsLocation.longitude)
@@ -192,8 +198,7 @@ class MainActivity : AppCompatActivity() {
         bindingMain?.tvTemp?.text = temp.toString() + "°C"
         bindingMain?.tvCity?.text = response.name
         bindingMain?.tvCountry?.text = response.sys.country
-        val date : Long = response.dt.toLong()
-        bindingMain?.tvDate?.text = "Last Updated at " + sdf.format(Date(date * 1000))
+        bindingMain?.tvDate?.text = "Last Updated at " + sdf.format(Date(System.currentTimeMillis()))
         bindingMain?.tvHumidity?.text = response.main.humidity.toString()
         val minTemp = (response.main.temp_min.toFloat() - 273.15).toInt()
         bindingMain?.tvMinTemp?.text = minTemp.toString() + "°C"

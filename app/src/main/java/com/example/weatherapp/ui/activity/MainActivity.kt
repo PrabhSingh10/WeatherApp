@@ -3,6 +3,7 @@ package com.example.weatherapp.ui.activity
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -104,13 +105,33 @@ class MainActivity : AppCompatActivity() {
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
 
         val hasGps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val hasNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
 
-        if(hasGps && checkLocationPermission()){
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 5000, 0F){}
-            val gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            if(gpsLocation != null){
+        var gpsLocation : Location? = null
+        var networkLocation : Location? = null
+
+        if ((hasGps||hasNetwork) && checkLocationPermission()) {
+            if(hasGps){
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER, 5000, 0F) {}
+                gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            }
+            if(hasNetwork){
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, 5000, 0F) {}
+                networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            }
+
+            if(gpsLocation != null && networkLocation != null) {
+                if(gpsLocation.accuracy > networkLocation.accuracy){
+                    getWeatherResponse(gpsLocation.latitude, gpsLocation.longitude)
+                }else{
+                    getWeatherResponse(networkLocation.latitude, networkLocation.longitude)
+                }
+            }else if(gpsLocation != null) {
                 getWeatherResponse(gpsLocation.latitude, gpsLocation.longitude)
+            }else if(networkLocation != null){
+                getWeatherResponse(networkLocation.latitude, networkLocation.longitude)
             }
         }
 
